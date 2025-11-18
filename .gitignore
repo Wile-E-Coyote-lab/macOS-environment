@@ -1,0 +1,26 @@
+# macOS setup-specific files (created by the setup.sh script)
+# These are the *target* files and should not be tracked.
+.zshrc
+.zshrc.bak
+.gitconfig
+
+# Local Editor and IDE files
+.vscode/
+.idea/
+*~
+
+# Operating System files
+.DS_Store
+
+# Git repository specific files (not tracked)
+# The local Git configuration file should NOT be shared across machines.
+.gitconfig
+
+# --- CRITICAL SECURITY: SSH Private Keys ---
+# DO NOT COMMIT YOUR PRIVATE KEYS!
+# This is the standard private key name:
+id_ed25519
+# Include any other private key types if you use them:
+id_rsa
+# The main SSH config file often contains local paths or sensitive data:
+.ssh/config
