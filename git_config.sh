@@ -1,6 +1,5 @@
 #!/bin/bash
 
-# --- Essential Git Configuration Script ---
 
 # 1. Configure the Global User Name (Must match your professional name)
 git config --global user.name "Your Name"

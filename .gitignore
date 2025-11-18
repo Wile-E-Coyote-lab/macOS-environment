@@ -24,3 +24,4 @@ id_ed25519
 id_rsa
 # The main SSH config file often contains local paths or sensitive data:
 .ssh/config
+.ssh.sh
