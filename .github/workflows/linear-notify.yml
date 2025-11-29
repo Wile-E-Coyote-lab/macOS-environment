@@ -1,0 +1,22 @@
+name: Notify Linear
+
+on:
+  push:
+    branches:
+      - main
+      - feature/*
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Notify Linear
+        env:
+          LINEAR_API_KEY: ${{ secrets.LINEAR_API_KEY }}
+        run: |
+          curl -X POST https://api.linear.app/graphql \
+            -H "Authorization: Bearer $LINEAR_API_KEY" \
+            -H "Content-Type: application/json" \
+            -d '{
+              "query": "mutation { commentCreate(input: { issueId: \"ISSUE_ID\", body: \"Commit pushed by ${{ github.actor }}\" }) { success } }"
+            }'
