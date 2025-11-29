@@ -1,3 +1,4 @@
+# .github/workflows/linear-notify.yml
 name: Notify Linear
 
 on:
@@ -9,49 +10,77 @@ on:
 jobs:
   notify:
     runs-on: ubuntu-latest
+
     steps:
-      - name: Checkout repo
+      - name: ⬇️ Checkout repository
         uses: actions/checkout@v4
 
-      - name: Read issue ID
+      - name: 📥 Extract Linear issue ID
         id: issue
         run: |
           if [ -f .linear/issue_id ]; then
-            echo "issue_id=$(cat .linear/issue_id)" >> $GITHUB_OUTPUT
+            ISSUE_ID=$(cat .linear/issue_id | tr -d '\n')
+            echo "issue_id=$ISSUE_ID" >> $GITHUB_OUTPUT
+            echo "✅ Found issue_id: $ISSUE_ID"
           else
             echo "issue_id=" >> $GITHUB_OUTPUT
+            echo "::warning::No .linear/issue_id file found. Skipping Linear notification."
           fi
 
-- name: Validate Linear Auth Injection
-  if: ${{ steps.issue.outputs.issue_id !=  }}
-  env:
-    LINEAR_API_KEY: ${{ secrets.LINEAR_API_KEY }}
-    ISSUE_ID: ${{ steps.issue.outputs.issue_id }}
-  run: |
-    if [ -z "$LINEAR_API_KEY" ]; then
-      echo "❌ LINEAR_API_KEY is missing or empty"
-      exit 1
-    elif [ "$LINEAR_API_KEY" = "***" ]; then
-      echo "❌ LINEAR_API_KEY is set to literal asterisks (***). Update the secret with a valid token."
-      exit 1
-    else
-      echo "✅ LINEAR_API_KEY is present (masked)"
-      echo "Header preview: Authorization: Bearer ***"
-      echo "ISSUE_ID: $ISSUE_ID"
-    fi
-      - name: Notify Linear via fetch
-        if: ${{ steps.issue.outputs.issue_id != '' }}
+      - name: 🔐 Validate Linear API key and issue ID
+        id: validate
         env:
           LINEAR_API_KEY: ${{ secrets.LINEAR_API_KEY }}
           ISSUE_ID: ${{ steps.issue.outputs.issue_id }}
         run: |
-          curl -s -X POST https://api.linear.app/graphql \
+          echo "🔍 Validating mutation preconditions..."
+
+          if [ -z "$LINEAR_API_KEY" ] || [ "$LINEAR_API_KEY" = "***" ]; then
+            echo "::error::❌ LINEAR_API_KEY is missing, empty, or improperly injected"
+            exit 1
+          fi
+
+          if [ -z "$ISSUE_ID" ]; then
+            echo "::error::❌ issue_id is missing or empty"
+            exit 1
+          fi
+
+          if ! [[ "$ISSUE_ID" =~ ^[A-Z]+-[0-9]+$ ]]; then
+            echo "::error::❌ issue_id format invalid: '$ISSUE_ID'"
+            exit 1
+          fi
+
+          echo "✅ LINEAR_API_KEY is present (masked)"
+          echo "✅ issue_id = $ISSUE_ID"
+
+      - name: 🚀 Notify Linear via GraphQL mutation
+        if: ${{ steps.validate.outcome == 'success' }}
+        env:
+          LINEAR_API_KEY: ${{ secrets.LINEAR_API_KEY }}
+          ISSUE_ID: ${{ steps.issue.outputs.issue_id }}
+        run: |
+          echo "📡 Sending GraphQL mutation to Linear for issue $ISSUE_ID..."
+
+          RESPONSE=$(curl -s -X POST https://api.linear.app/graphql \
             -H "Authorization: Bearer $LINEAR_API_KEY" \
             -H "Content-Type: application/json" \
-            -d "$(jq -n --arg id "$ISSUE_ID" --arg actor "$GITHUB_ACTOR" --arg sha "$GITHUB_SHA" --arg branch "${GITHUB_REF#refs/heads/}" '{
+            -d "$(jq -n --arg id "$ISSUE_ID" \
+                        --arg actor "$GITHUB_ACTOR" \
+                        --arg sha "$GITHUB_SHA" \
+                        --arg branch "${GITHUB_REF#refs/heads/}" '{
               query: "mutation Comment($id: String!, $body: String!) { commentCreate(input: { issueId: $id, body: $body }) { success } }",
               variables: {
                 id: $id,
                 body: ("📦 Commit " + $sha + " by " + $actor + " on branch " + $branch)
               }
-            }')"
+            }')")
+
+          echo "🔁 Linear API response:"
+          echo "$RESPONSE" | jq
+
+          if echo "$RESPONSE" | jq -e '.data.commentCreate.success' | grep -q true; then
+            echo "✅ Comment successfully posted to Linear issue $ISSUE_ID"
+          else
+            echo "::error::❌ Failed to post comment to Linear"
+            exit 1
+          fi

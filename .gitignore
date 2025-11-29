@@ -30,3 +30,7 @@ id_rsa
 .dev/
 .linear/
 !.linear/issue_id
+
+
+# .gitignore
+.env
