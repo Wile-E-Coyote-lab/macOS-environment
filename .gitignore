@@ -34,3 +34,18 @@ id_rsa
 
 # .gitignore
 .env
+
+# Prevent secret leakage
+.env
+.env.*
+*.key
+*.pem
+*.token
+*.secret
+*.envrc
+.DS_Store
+node_modules/
+dist/
+
+.dev/linear.envo
+

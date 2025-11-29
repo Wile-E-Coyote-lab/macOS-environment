@@ -1,0 +1,3 @@
+# requirements.freeze — Minimal CLI dependencies
+jq
+curl
