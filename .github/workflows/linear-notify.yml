@@ -10,13 +10,31 @@ jobs:
   notify:
     runs-on: ubuntu-latest
     steps:
-      - name: Notify Linear
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Read issue ID
+        id: issue
+        run: |
+          if [ -f .linear/issue_id ]; then
+            echo "issue_id=$(cat .linear/issue_id)" >> $GITHUB_OUTPUT
+          else
+            echo "issue_id=" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Notify Linear via fetch
+        if: ${{ steps.issue.outputs.issue_id != '' }}
         env:
           LINEAR_API_KEY: ${{ secrets.LINEAR_API_KEY }}
+          ISSUE_ID: ${{ steps.issue.outputs.issue_id }}
         run: |
-          curl -X POST https://api.linear.app/graphql \
-            -H "Authorization: Bearer $LINEAR_API_KEY" \
+          curl -s -X POST https://api.linear.app/graphql \
+            -H "Authorization: $LINEAR_API_KEY" \
             -H "Content-Type: application/json" \
-            -d '{
-              "query": "mutation { commentCreate(input: { issueId: \"ISSUE_ID\", body: \"Commit pushed by ${{ github.actor }}\" }) { success } }"
-            }'
+            -d "$(jq -n --arg id "$ISSUE_ID" --arg actor "$GITHUB_ACTOR" --arg sha "$GITHUB_SHA" --arg branch "${GITHUB_REF#refs/heads/}" '{
+              query: "mutation Comment($id: String!, $body: String!) { commentCreate(input: { issueId: $id, body: $body }) { success } }",
+              variables: {
+                id: $id,
+                body: ("📦 Commit " + $sha + " by " + $actor + " on branch " + $branch)
+              }
+            }')"
