@@ -1,41 +1,26 @@
-# macOS setup-specific files (created by the setup.sh script)
-# These are the *target* files and should not be tracked.
+# ─── macOS Setup Artifacts ─────────────────────────────
 .zshrc
 .zshrc.bak
 .gitconfig
+.DS_Store
+mac_defaults.sh
 
-# Local Editor and IDE files
+# ─── Local Editor and IDE Files ────────────────────────
 .vscode/
 .idea/
 *~
 
-# Operating System files
-.DS_Store
-
-# Git repository specific files (not tracked)
-# The local Git configuration file should NOT be shared across machines.
+# ─── Git Repository Specific ───────────────────────────
+# Local Git config should not be shared
 .gitconfig
 
-# --- CRITICAL SECURITY: SSH Private Keys ---
-# DO NOT COMMIT YOUR PRIVATE KEYS!
-# This is the standard private key name:
+# ─── SSH Private Keys and Configs ──────────────────────
 id_ed25519
-# Include any other private key types if you use them:
 id_rsa
-# The main SSH config file often contains local paths or sensitive data:
 .ssh/config
-.ssh.sh
+ssh.sh
 
-
-.dev/
-.linear/
-!.linear/issue_id
-
-
-# .gitignore
-.env
-
-# Prevent secret leakage
+# ─── Local State and Secrets ───────────────────────────
 .env
 .env.*
 *.key
@@ -43,9 +28,13 @@ id_rsa
 *.token
 *.secret
 *.envrc
-.DS_Store
+
+# ─── Project-Specific State ────────────────────────────
+.dev/
+.dev/linear.envo
+.linear/
+!.linear/issue_id
+
+# ─── Build Artifacts ───────────────────────────────────
 node_modules/
 dist/
-
-.dev/linear.envo
-
