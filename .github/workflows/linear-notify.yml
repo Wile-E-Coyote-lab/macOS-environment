@@ -22,6 +22,23 @@ jobs:
             echo "issue_id=" >> $GITHUB_OUTPUT
           fi
 
+- name: Validate Linear Auth Injection
+  if: ${{ steps.issue.outputs.issue_id !=  }}
+  env:
+    LINEAR_API_KEY: ${{ secrets.LINEAR_API_KEY }}
+    ISSUE_ID: ${{ steps.issue.outputs.issue_id }}
+  run: |
+    if [ -z "$LINEAR_API_KEY" ]; then
+      echo "❌ LINEAR_API_KEY is missing or empty"
+      exit 1
+    elif [ "$LINEAR_API_KEY" = "***" ]; then
+      echo "❌ LINEAR_API_KEY is set to literal asterisks (***). Update the secret with a valid token."
+      exit 1
+    else
+      echo "✅ LINEAR_API_KEY is present (masked)"
+      echo "Header preview: Authorization: Bearer ***"
+      echo "ISSUE_ID: $ISSUE_ID"
+    fi
       - name: Notify Linear via fetch
         if: ${{ steps.issue.outputs.issue_id != '' }}
         env:
