@@ -1,4 +1,3 @@
-# .github/workflows/linear-notify.yml
 name: Notify Linear
 
 on:
@@ -27,42 +26,42 @@ jobs:
             echo "::warning::No .linear/issue_id file found. Skipping Linear notification."
           fi
 
-      - name: 🔐 Validate Linear API key and issue ID
-        id: validate
+      - name: 🔁 Exchange OAuth code for access token
+        if: ${{ steps.issue.outputs.issue_id != '' }}
         env:
-          LINEAR_API_KEY: ${{ secrets.LINEAR_API_KEY }}
-          ISSUE_ID: ${{ steps.issue.outputs.issue_id }}
+          LINEAR_APP_ID: ${{ secrets.LINEAR_APP_ID }}
+          LINEAR_CLIENT_SECRET: ${{ secrets.LINEAR_CLIENT_SECRET }}
+          LINEAR_REDIRECT_URI: ${{ secrets.LINEAR_REDIRECT_URI }}
+          LINEAR_OAUTH_CODE: ${{ secrets.LINEAR_OAUTH_CODE }}
         run: |
-          echo "🔍 Validating mutation preconditions..."
+          echo "🔐 Exchanging OAuth code for access token..."
 
-          if [ -z "$LINEAR_API_KEY" ] || [ "$LINEAR_API_KEY" = "***" ]; then
-            echo "::error::❌ LINEAR_API_KEY is missing, empty, or improperly injected"
+          RESPONSE=$(curl -sS -X POST https://api.linear.app/oauth/token \
+            -H "Content-Type: application/x-www-form-urlencoded" \
+            -d "client_id=$LINEAR_APP_ID&client_secret=$LINEAR_CLIENT_SECRET&redirect_uri=$LINEAR_REDIRECT_URI&grant_type=authorization_code&code=$LINEAR_OAUTH_CODE")
+
+          echo "$RESPONSE" | jq
+
+          ACCESS_TOKEN=$(echo "$RESPONSE" | jq -r '.access_token')
+
+          if [[ "$ACCESS_TOKEN" == "null" || -z "$ACCESS_TOKEN" ]]; then
+            echo "::error::❌ Token exchange failed. Invalid code or upstream error."
             exit 1
           fi
 
-          if [ -z "$ISSUE_ID" ]; then
-            echo "::error::❌ issue_id is missing or empty"
-            exit 1
-          fi
-
-          if ! [[ "$ISSUE_ID" =~ ^[A-Z]+-[0-9]+$ ]]; then
-            echo "::error::❌ issue_id format invalid: '$ISSUE_ID'"
-            exit 1
-          fi
-
-          echo "✅ LINEAR_API_KEY is present (masked)"
-          echo "✅ issue_id = $ISSUE_ID"
+          echo "✅ Access token acquired"
+          echo "ACCESS_TOKEN=$ACCESS_TOKEN" >> $GITHUB_ENV
 
       - name: 🚀 Notify Linear via GraphQL mutation
-        if: ${{ steps.validate.outcome == 'success' }}
+        if: ${{ steps.issue.outputs.issue_id != '' }}
         env:
-          LINEAR_API_KEY: ${{ secrets.LINEAR_API_KEY }}
+          ACCESS_TOKEN: ${{ env.ACCESS_TOKEN }}
           ISSUE_ID: ${{ steps.issue.outputs.issue_id }}
         run: |
           echo "📡 Sending GraphQL mutation to Linear for issue $ISSUE_ID..."
 
           RESPONSE=$(curl -s -X POST https://api.linear.app/graphql \
-            -H "Authorization: Bearer $LINEAR_API_KEY" \
+            -H "Authorization: Bearer $ACCESS_TOKEN" \
             -H "Content-Type: application/json" \
             -d "$(jq -n --arg id "$ISSUE_ID" \
                         --arg actor "$GITHUB_ACTOR" \
