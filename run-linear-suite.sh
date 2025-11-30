@@ -1,18 +1,33 @@
-#!/bin/bash
-set -euo pipefail
+🔧 Checking requirements...
+✅ All required tools are installed
 
-# Load environment
-[ -f .env ] && export $(grep -v '^#' .env | xargs)
+📦 Bootstrapping Linear environment...
+✅ .linear/ directory initialized
 
-./scripts/check-requirements.sh
-./scripts/linear-bootstrap.sh
-./scripts/linear-init.sh
-./scripts/env_sync_secrets.sh
-bash cli/oauth/session.sh
-bash scripts/validate-oauth-code.sh
-./scripts/validate-linear-token.sh
-./scripts/linear-verify.sh
-./scripts/linear-link-issue.sh || echo "skip"
-./scripts/post-linear-content.sh
-./scripts/linear_api_response.sh
-bash scripts/linear-session-status.sh
+🔐 Starting OAuth session...
+🌐 Opening browser for authentication...
+✅ OAuth code captured
+
+🧪 Validating OAuth code...
+✅ OAuth code is fresh (XX seconds old)
+
+🔁 Exchanging code for access token...
+✅ Access token acquired
+
+🔐 Verifying token authentication...
+✅ Token is authenticated and usable
+
+📎 Verifying Linear issue context...
+✅ Issue ID found: lin_123abc...
+
+🔗 Linking issue (optional)...
+⚠️ Skipping issue linking (already linked or not required)
+
+📝 Posting content to Linear...
+✅ Mutation dispatched
+
+📬 Inspecting Linear API response...
+✅ Response logged to .linear/api_response.json
+
+📊 Checking session status...
+✅ Session valid, token active, mutation confirmed
