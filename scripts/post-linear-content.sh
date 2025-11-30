@@ -26,7 +26,7 @@ ISSUE_KEY=$(<"$METADATA_FILE")
 }
 
 # Resolve issueId from issueKey
-ISSUE_LOOKUP=$(curl -s -H "Authorization: Bearer $LINEAR_API_KEY" \
+ISSUE_LOOKUP=$(curl -s -H "Authorization: Bearer $ACCESS_TOKEN"
   -H "Content-Type: application/json" \
   -X POST https://api.linear.app/graphql \
   -d '{
@@ -44,7 +44,7 @@ ISSUE_ID=$(echo "$ISSUE_LOOKUP" | jq -r '.data.issue.id // empty')
 
 # Post comment
 RESPONSE=$(curl -s -w "\n%{http_code}" \
-  -H "Authorization: Bearer $LINEAR_API_KEY" \
+  -H "Authorization: Bearer $ACCESS_TOKEN"
   -H "Content-Type: application/json" \
   -X POST https://api.linear.app/graphql \
   -d '{

@@ -1,33 +1,44 @@
-🔧 Checking requirements...
-✅ All required tools are installed
+#!/bin/bash
+set -euo pipefail
 
-📦 Bootstrapping Linear environment...
-✅ .linear/ directory initialized
+echo "Starting Linear suite..."
 
-🔐 Starting OAuth session...
-🌐 Opening browser for authentication...
-✅ OAuth code captured
+# Load environment
+if [[ -f .env ]]; then
+  set -o allexport
+  source .env
+  set +o allexport
+else
+  echo "::error::Missing .env file"
+  exit 1
+fi
 
-🧪 Validating OAuth code...
-✅ OAuth code is fresh (XX seconds old)
+# Confirm API key
+if [[ -z "${LINEAR_API_KEY:-}" ]]; then
+  echo "::error::Missing LINEAR_API_KEY"
+  exit 1
+fi
 
-🔁 Exchanging code for access token...
-✅ Access token acquired
+ACCESS_TOKEN="$LINEAR_API_KEY"
+AUTH_HEADER="Authorization: $ACCESS_TOKEN"
 
-🔐 Verifying token authentication...
-✅ Token is authenticated and usable
+# Dispatch mutation (example: viewer query)
+RESPONSE=$(curl -s -X POST https://api.linear.app/graphql \
+  -H "$AUTH_HEADER" \
+  -H "Content-Type: application/json" \
+  -d '{"query":"{ viewer { id name email } }"}')
 
-📎 Verifying Linear issue context...
-✅ Issue ID found: lin_123abc...
+mkdir -p .linear .archive
 
-🔗 Linking issue (optional)...
-⚠️ Skipping issue linking (already linked or not required)
+# Save raw response
+echo "$RESPONSE" | jq . > .linear/api_response.json
 
-📝 Posting content to Linear...
-✅ Mutation dispatched
+# Archive with timestamp
+STAMP=$(date -u +%Y-%m-%dT%H-%M-%SZ)
+cp .linear/api_response.json ".archive/api_response.$STAMP.json"
 
-📬 Inspecting Linear API response...
-✅ Response logged to .linear/api_response.json
+# Write Markdown summary
+jq -r '.data.viewer | "### 👤 Viewer\n- **ID**: \(.id)\n- **Name**: \(.name)\n- **Email**: \(.email)"' \
+  .linear/api_response.json > .linear/summary.md
 
-📊 Checking session status...
-✅ Session valid, token active, mutation confirmed
+echo "✅ Mutation complete. Summary written to .linear/summary.md"

@@ -40,3 +40,13 @@ node_modules/
 dist/
 .linear/oauth_code
 .linear/oauth_code
+
+# 🛡️ Linear workspace security: block sensitive artifacts
+.linear/token_response.json
+.linear/oauth_code
+.linear/api_response.json
+.linear/summary.md
+.linear/auth_log.ndjson
+.linear/*.log
+.archive/
+.env

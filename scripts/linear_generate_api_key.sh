@@ -16,7 +16,7 @@ echo "✅ Saved LINEAR_API_KEY to .dev/linear.env"
 # Test the key with a minimal query
 echo "🔎 Validating API key..."
 RESPONSE=$(curl -s https://api.linear.app/graphql \
-  -H "Authorization: Bearer $LINEAR_API_KEY" \
+  -H "Authorization: Bearer $ACCESS_TOKEN"
   -H "Content-Type: application/json" \
   -d '{"query":"{ viewer { id name email } }"}')
 
