@@ -32,3 +32,6 @@ mutate-comment:
 
 auth-check:
   bash .linear/env.sh
+
+validate:
+	bash scripts/validate.sh
