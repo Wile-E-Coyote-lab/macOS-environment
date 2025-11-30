@@ -33,8 +33,10 @@ ssh.sh
 .dev/
 .dev/linear.envo
 .linear/
-!.linear/issue_id
-
+.linear/
+.linear/oauth_code
 # ─── Build Artifacts ───────────────────────────────────
 node_modules/
 dist/
+.linear/oauth_code
+.linear/oauth_code

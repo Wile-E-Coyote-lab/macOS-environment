@@ -2,26 +2,30 @@
 # Wile-E-Coyote-lab macOS Environment Standard Packages
 
 # --- 1. Core Command Line Tools (Formulae) ---
-# These are command-line programs installed into /usr/local/bin
-brew "git"              # Essential version control (already installed, but good for tracking)
-brew "wget"             # Retrieve files from the web
-brew "curl"             # Enhanced version of curl (often needed for scripting)
-brew "jq"               # Command-line JSON processor (essential for API work)
-brew "tree"             # Lists directory contents in a tree-like format
-brew "htop"             # Interactive process viewer (better than 'top')
-brew "zsh-autosuggestions" # Zsh completion and history suggestions (Plugin dependency)
+brew "git"                    # Essential version control
+brew "wget"                   # Retrieve files from the web
+brew "curl"                   # Enhanced version of curl (often needed for scripting)
+brew "jq"                     # JSON processor (used in API and token parsing)
+brew "yq"                     # YAML processor (used in GHA workflows)
+brew "tree"                   # Directory visualization
+brew "htop"                   # Process viewer
+brew "gnu-sed"                # Portable sed (used in extract_code_from_url.sh)
+brew "zsh-autosuggestions"    # Zsh plugin support
 
 # --- 2. Programming Languages/Runtimes ---
-brew "node"             # Node.js runtime environment (essential for web)
-brew "python"           # Latest stable Python 3
+brew "node"                   # Node.js runtime
+brew "python@3.11"            # Stable Python 3 (explicit version for listener.py)
+brew "pipx"                   # Isolated Python CLI tool management
 
-# --- 3. GUI Applications (Casks) ---
-# These are desktop applications installed into the Applications folder
+# --- 3. GitHub CLI Integration ---
+brew "gh"                     # GitHub CLI (used in exportcode.sh and session.sh)
+
+# --- 4. GUI Applications (Casks) ---
 cask "google-chrome"
-cask "visual-studio-code" # VS Code (IDE)
-cask "iterm2"             # Preferred Terminal replacement
-cask "docker"             # Containerization platform
-cask "slack"              # Team communication (essential for Wile-E-Coyote-lab)
+cask "visual-studio-code"
+cask "iterm2"
+cask "docker"
+cask "slack"
 
-# --- 4. Fonts (Optional but Recommended for Consistency) ---
+# --- 5. Fonts (Optional but Recommended) ---
 # cask "font-jetbrains-mono"
