@@ -1,85 +1,38 @@
-name: Notify Linear
+name: Linear API Key Suite
 
 on:
+  workflow_dispatch:
   push:
-    branches:
-      - main
-      - feature/*
+    paths:
+      - scripts/**
+      - justfile
+      - .env
 
 jobs:
-  notify:
+  linear-run:
     runs-on: ubuntu-latest
+    env:
+      LINEAR_API_KEY: ${{ secrets.LINEAR_API_KEY }}
 
     steps:
-      - name: ⬇️ Checkout repository
+      - name: ⬇️ Checkout repo
         uses: actions/checkout@v4
 
-      - name: 📥 Extract Linear issue ID
-        id: issue
+      - name: 🛠 Set up environment
         run: |
-          if [ -f .linear/issue_id ]; then
-            ISSUE_ID=$(cat .linear/issue_id | tr -d '\n')
-            echo "issue_id=$ISSUE_ID" >> $GITHUB_OUTPUT
-            echo "✅ Found issue_id: $ISSUE_ID"
-          else
-            echo "issue_id=" >> $GITHUB_OUTPUT
-            echo "::warning::No .linear/issue_id file found. Skipping Linear notification."
-          fi
+          mkdir -p .linear .archive
+          echo "LINEAR_API_KEY=${LINEAR_API_KEY}" >> .env
 
-      - name: 🔁 Exchange OAuth code for access token
-        if: ${{ steps.issue.outputs.issue_id != '' }}
-        env:
-          LINEAR_APP_ID: ${{ secrets.LINEAR_APP_ID }}
-          LINEAR_CLIENT_SECRET: ${{ secrets.LINEAR_CLIENT_SECRET }}
-          LINEAR_REDIRECT_URI: ${{ secrets.LINEAR_REDIRECT_URI }}
-          LINEAR_OAUTH_CODE: ${{ secrets.LINEAR_OAUTH_CODE }}
+      - name: 🧪 Run Linear suite
+        run: just run
+
+      - name: 🧾 Log summary
+        run: cat .linear/summary.md
+
+      - name: 📦 Archive response
         run: |
-          echo "🔐 Exchanging OAuth code for access token..."
+          STAMP=$(date -u +%Y-%m-%dT%H-%M-%SZ)
+          cp .linear/api_response.json ".archive/api_response.$STAMP.json"
 
-          RESPONSE=$(curl -sS -X POST https://api.linear.app/oauth/token \
-            -H "Content-Type: application/x-www-form-urlencoded" \
-            -d "client_id=$LINEAR_APP_ID&client_secret=$LINEAR_CLIENT_SECRET&redirect_uri=$LINEAR_REDIRECT_URI&grant_type=authorization_code&code=$LINEAR_OAUTH_CODE")
-
-          echo "$RESPONSE" | jq
-
-          ACCESS_TOKEN=$(echo "$RESPONSE" | jq -r '.access_token')
-
-          if [[ "$ACCESS_TOKEN" == "null" || -z "$ACCESS_TOKEN" ]]; then
-            echo "::error::❌ Token exchange failed. Invalid code or upstream error."
-            exit 1
-          fi
-
-          echo "✅ Access token acquired"
-          echo "ACCESS_TOKEN=$ACCESS_TOKEN" >> $GITHUB_ENV
-
-      - name: 🚀 Notify Linear via GraphQL mutation
-        if: ${{ steps.issue.outputs.issue_id != '' }}
-        env:
-          ACCESS_TOKEN: ${{ env.ACCESS_TOKEN }}
-          ISSUE_ID: ${{ steps.issue.outputs.issue_id }}
-        run: |
-          echo "📡 Sending GraphQL mutation to Linear for issue $ISSUE_ID..."
-
-          RESPONSE=$(curl -s -X POST https://api.linear.app/graphql \
-            -H "Authorization: Bearer $ACCESS_TOKEN" \
-            -H "Content-Type: application/json" \
-            -d "$(jq -n --arg id "$ISSUE_ID" \
-                        --arg actor "$GITHUB_ACTOR" \
-                        --arg sha "$GITHUB_SHA" \
-                        --arg branch "${GITHUB_REF#refs/heads/}" '{
-              query: "mutation Comment($id: String!, $body: String!) { commentCreate(input: { issueId: $id, body: $body }) { success } }",
-              variables: {
-                id: $id,
-                body: ("📦 Commit " + $sha + " by " + $actor + " on branch " + $branch)
-              }
-            }')")
-
-          echo "🔁 Linear API response:"
-          echo "$RESPONSE" | jq
-
-          if echo "$RESPONSE" | jq -e '.data.commentCreate.success' | grep -q true; then
-            echo "✅ Comment successfully posted to Linear issue $ISSUE_ID"
-          else
-            echo "::error::❌ Failed to post comment to Linear"
-            exit 1
-          fi
+      - name: 🧹 Clean workspace
+        run: just clean
